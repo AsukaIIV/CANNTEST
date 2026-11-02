@@ -1,0 +1,68 @@
+name: static-check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 工程结构完整性
+        run: |
+          set -e
+          test -f CMakeLists.txt
+          test -f CMakePresets.json
+          test -f build.sh
+          test -d op_host && test -d op_kernel
+          test -f op_host/add_custom.cpp
+          test -f op_kernel/add_custom.cpp
+          test -f op_kernel/add_custom_tiling.h
+          echo "structure OK"
+
+      - name: shell 语法检查
+        run: bash -n build.sh && echo "build.sh syntax OK"
+
+      - name: JSON 校验
+        run: python3 -c "import json; json.load(open('CMakePresets.json')); print('CMakePresets.json OK')"
+
+      - name: tiling 结构与 host/kernel 一致
+        run: |
+          set -e
+          grep -q 'struct AddCustomTilingData' op_kernel/add_custom_tiling.h
+          grep -q 'totalLength' op_kernel/add_custom_tiling.h
+          grep -q 'tileLength'   op_kernel/add_custom_tiling.h
+          grep -q 'totalLength'  op_host/add_custom.cpp
+          grep -q 'SetBlockDim'  op_host/add_custom.cpp
+          echo "tiling contract OK"
+
+      - name: kernel 不得是空壳
+        run: |
+          if grep -q 'TODO: user kernel impl' op_kernel/add_custom.cpp; then
+            echo "::error::op_kernel/add_custom.cpp 仍是 msopgen 空壳（TODO），请实现 kernel"
+            exit 1
+          fi
+          grep -q 'Add(' op_kernel/add_custom.cpp
+          echo "kernel implemented"
+
+      - name: 构建产物不得入库
+        run: |
+          if git ls-files | grep -qE '(^|/)(build_out|build)/|\.run$|\.o$|\.so$'; then
+            echo "::error::仓库里出现了构建产物，请检查 .gitignore"
+            git ls-files | grep -E '(^|/)(build_out|build)/|\.run$|\.o$|\.so$'
+            exit 1
+          fi
+          echo "no artifacts tracked"
+
+  note-ascend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 提示
+        run: |
+          echo "真机验证需 Ascend 910B：在 CANNLab Dev Space 容器内执行"
+          echo "  source /home/developer/Ascend/ascend-toolkit/set_env.sh"
+          echo "  bash build.sh && bash tests/run_test.sh"

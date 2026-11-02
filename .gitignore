@@ -27,3 +27,7 @@ __pycache__/
 
 # 测试二进制
 tests/test_add_custom
+tests/prof_*
+tests/p_*
+tests/q_*
+tests/OPPROF_*

@@ -20,9 +20,10 @@ public:
         uint32_t total = t->totalLength;
         uint32_t blockNum = GetBlockNum();
         uint32_t idx = GetBlockIdx();
-        // 每核长度按 32B（8 个 fp32 元素）向上对齐，保证 GM 起始地址对齐
+        // 每核长度按 32B 向上对齐（元素数随 dtype 变化：fp32=8、fp16=16），保证 GM 起始地址对齐
+        constexpr uint32_t ALIGN_ELEMS = 32u / sizeof(DTYPE_X);
         uint32_t per = (total + blockNum - 1) / blockNum;
-        per = (per + 7u) / 8u * 8u;
+        per = (per + ALIGN_ELEMS - 1u) / ALIGN_ELEMS * ALIGN_ELEMS;
         uint32_t offset = idx * per;
         len_ = (offset >= total) ? 0u : ((total - offset) < per ? (total - offset) : per);
         tileLen_ = t->tileLength;

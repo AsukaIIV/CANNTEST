@@ -13,14 +13,18 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
   for (size_t i = 0; i < x1_shape->GetStorageShape().GetDimNum(); i++)
     data_sz *= x1_shape->GetStorageShape().GetDim(i);
 
-  constexpr uint32_t TILE_LENGTH = 1024;                 // 单次搬运元素数
+  // 单次搬运字节数（按 dtype 换算成元素数，避免 fp16 只搬一半字节）
+  constexpr uint32_t TILE_BYTES = 16384;
   uint32_t total = static_cast<uint32_t>(data_sz);
+  ge::DataType dt = context->GetInputDesc(0)->GetDataType();
+  uint32_t dsize = (dt == ge::DT_FLOAT16) ? 2u : 4u;
+  uint32_t tileLength = TILE_BYTES / dsize;
   // 小 shape 用单核，避免 blockDim 过大导致每核分不到数据
-  uint32_t blockDim = (total < TILE_LENGTH) ? 1u : 8u;
+  uint32_t blockDim = (total < tileLength) ? 1u : 8u;
 
   tiling->totalLength = total;
-  tiling->tileLength = TILE_LENGTH;
-  tiling->tileNum = (total + TILE_LENGTH - 1u) / TILE_LENGTH;
+  tiling->tileLength = tileLength;
+  tiling->tileNum = (total + tileLength - 1u) / tileLength;
 
   context->SetBlockDim(blockDim);
   size_t *currentWorkspace = context->GetWorkspaceSizes(1);

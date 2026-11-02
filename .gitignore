@@ -1,0 +1,26 @@
+# 构建产物
+build_out/
+build/
+_CPack_Packages/
+*.run
+*.o
+*.so
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# 环境与日志
+.cannlab/
+*.log
+log/
+
+# Python 缓存
+__pycache__/
+*.pyc
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+.DS_Store

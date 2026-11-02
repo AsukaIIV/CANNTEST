@@ -20,7 +20,9 @@
 #include <cstdint>
 
 struct AddCustomTilingData {
-    uint32_t size;
+    uint32_t totalLength;   // 元素总数
+    uint32_t tileLength;    // 单次搬运的元素数
+    uint32_t tileNum;       // 分块数（预留）
 };
 
 #endif // ADD_CUSTOM_TILING_H

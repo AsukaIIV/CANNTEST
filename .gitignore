@@ -24,3 +24,6 @@ __pycache__/
 .idea/
 *.swp
 .DS_Store
+
+# 测试二进制
+tests/test_add_custom
